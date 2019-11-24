@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: transmission
+  labels:
+    name: transmission
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmission
+  namespace: transmission
+  labels:
+    app: transmission
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transmission
+  template:
+    metadata:
+      labels:
+        app: transmission
+    spec:
+      volumes:
+        - name: transmission-downloads
+          persistentVolumeClaim:
+            claimName: transmission-downloads
+        - name: transmission-config
+          persistentVolumeClaim:
+            claimName: transmission-config
+      containers:
+      - name: transmission
+        image: linuxserver/transmission:amd64-latest
+        ports:
+        - containerPort: 9091
+        - containerPort: 51413
+        volumeMounts:
+          - mountPath: /config
+            name: transmission-config
+        volumeMounts:
+          - mountPath: /downloads
+            name: transmission-downloads
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: transmission-downloads
+  namespace: transmission
+  labels:
+    type: local
+spec:
+  storageClassName: microk8s-hostpath
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/transmission/downloads"
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: transmission-config
+  namespace: transmission
+  labels:
+    type: local
+spec:
+  storageClassName: microk8s-hostpath
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/transmission/config"
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: transmission-downloads
+  namespace: transmission
+spec:
+  storageClassName: microk8s-hostpath
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: transmission-config
+  namespace: transmission
+spec:
+  storageClassName: microk8s-hostpath
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: transmission
+  namespace: transmission
+spec:
+  selector:
+    app: transmission
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9091
+
+---
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: transmission
+  namespace: transmission
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /transmission
+        backend:
+          serviceName: transmission
+          servicePort: 80
