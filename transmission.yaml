@@ -7,45 +7,6 @@ metadata:
 
 ---
 
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: transmission
-  namespace: transmission
-  labels:
-    app: transmission
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: transmission
-  template:
-    metadata:
-      labels:
-        app: transmission
-    spec:
-      volumes:
-        - name: transmission-downloads
-          persistentVolumeClaim:
-            claimName: transmission-downloads
-        - name: transmission-config
-          persistentVolumeClaim:
-            claimName: transmission-config
-      containers:
-      - name: transmission
-        image: linuxserver/transmission:amd64-latest
-        ports:
-        - containerPort: 9091
-        - containerPort: 51413
-        volumeMounts:
-          - mountPath: /config
-            name: transmission-config
-        volumeMounts:
-          - mountPath: /downloads
-            name: transmission-downloads
-
----
-
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -109,6 +70,44 @@ spec:
   resources:
     requests:
       storage: 5Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmission
+  namespace: transmission
+  labels:
+    app: transmission
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transmission
+  template:
+    metadata:
+      labels:
+        app: transmission
+    spec:
+      volumes:
+        - name: transmission-downloads
+          persistentVolumeClaim:
+            claimName: transmission-downloads
+        - name: transmission-config
+          persistentVolumeClaim:
+            claimName: transmission-config
+      containers:
+      - name: transmission
+        image: linuxserver/transmission:amd64-latest
+        ports:
+        - containerPort: 9091
+        - containerPort: 51413
+        volumeMounts:
+          - mountPath: /config
+            name: transmission-config
+          - mountPath: /downloads
+            name: transmission-downloads
 
 ---
 
